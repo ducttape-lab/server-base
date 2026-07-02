@@ -1,5 +1,5 @@
-ARG BASE_IMAGE="quay.io/fedora/fedora"
-ARG BASE_VERSION="41"
+ARG BASE_IMAGE="quay.io/almalinuxorg/almalinux-bootc"
+ARG BASE_VERSION="10"
 
 FROM ${BASE_IMAGE}:${BASE_VERSION} AS base
 
@@ -12,31 +12,32 @@ RUN if [ -n "${ADMIN_PASSWD}" ] ; then \
 
 # essential packages
 RUN dnf install -y \
-        dnf-plugins-core git-core \
+	systemd \
+	git-core \
+	sudo \
+        dnf-plugins-core \
     && dnf install -y \
-        'dnf5-command(config-manager)' \
+        util-linux \
+        util-linux-user \
+    && dnf install -y \
+        epel-release \
     && dnf clean all \
     && rm -rf /var/cache/yum
 
 # install tailscale (or use https://github.com/spotsnel/tailscale-systemd/)
-RUN dnf config-manager addrepo --from-repofile=https://pkgs.tailscale.com/stable/fedora/tailscale.repo \
+RUN dnf config-manager --add-repo https://pkgs.tailscale.com/stable/rhel/10/tailscale.repo \
     && dnf install -y \
         tailscale \
     && dnf clean all \
     && rm -rf /var/cache/yum \
     && mkdir -p /var/run/tailscale /var/cache/tailscale /var/lib/tailscale
 
-# install cloudflared (or use https://github.com/spotsnel/cloudflared-systemd/)
-RUN dnf install -y \
-        systemd \
-    && curl -fsSL https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-x86_64.rpm -o /tmp/cloudflared.rpm \
-    && dnf install -y \
-        /tmp/cloudflared.rpm \
-    && dnf clean all \
-    && rm -rf /var/cache/yum \
-    && rm -f /tmp/cloudflared.rpm
-
 RUN systemctl enable tailscaled
+
+# enable linger for the user (loginctl won't work without systemd running)
+RUN mkdir -p /var/lib/systemd/linger \
+    && touch /var/lib/systemd/linger/${USER} \
+    && systemctl unmask systemd-logind
 
 # systemd
 ENTRYPOINT ["/sbin/init"]

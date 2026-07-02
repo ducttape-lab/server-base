@@ -15,11 +15,11 @@ jobs:
         uses: actions/checkout@v4
       - name: Run podman build - base
         run: |
-          podman build -t ghcr.io/gbraad-homelab/private-base:latest \
-            --build-arg=BASE_IMAGE="quay.io/fedora/fedora" \
-            --build-arg=BASE_VERSION="41" \
+          podman build -t ghcr.io/ducttape-lab/server-base:latest \
+            --build-arg=BASE_IMAGE="quay.io/almalinuxorg/almalinux" \
+            --build-arg=BASE_VERSION="10" \
             -f containers/Containerfile-base .
       - name: Push image to ghcr.io - base
         run: |
           podman push --creds=${{ github.actor }}:${{ secrets.GITHUB_TOKEN }} \
-            ghcr.io/gbraad-homelab/private-base:latest
+            ghcr.io/ducttape-lab/server-base:latest
